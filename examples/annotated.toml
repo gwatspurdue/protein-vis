@@ -1,0 +1,77 @@
+# The bundled PDB contains the original A/C chains from 9CHT (B omitted).
+version = 1
+preset = "protein-protein"
+title = "9CHT · E6AP and E6 interaction sites"
+output = "../figures/annotated"
+columns = 2
+width_inches = 7.2
+panel_height_inches = 3.2
+
+[render]
+width = 1400
+height = 1100
+dpi = 300
+contact_cutoff = 4.5
+align = true
+
+[[panels]]
+id = "context"
+title = "E6 in context"
+structure = "data/9cht-ac.pdb"
+target = "chain A"
+partner = "chain C"
+partner_representation = "cartoon"
+target_transparency = 0.35
+
+[[panels.sites]]
+name = "E6AP 403–424"
+selection = "chain A and resi 403-424"
+color = "#eda100"
+representation = "surface"
+
+[[panels.sites]]
+name = "E6AP 468–472"
+selection = "chain A and resi 468-472"
+color = "#1baf7a"
+representation = "surface"
+
+[[panels]]
+id = "interface"
+title = "Two highlighted contact regions"
+scene = "interface"
+structure = "data/9cht-ac.pdb"
+target = "chain A"
+partner = "chain C"
+partner_representation = "cartoon"
+target_transparency = 0.65
+focus = "(chain A and resi 403-424+468-472) or (chain C within 6 of (chain A and resi 403-424+468-472))"
+
+[[panels.sites]]
+name = "E6AP 403–424"
+selection = "chain A and resi 403-424"
+color = "#eda100"
+representation = "sticks"
+
+[[panels.sites]]
+name = "E6AP 468–472"
+selection = "chain A and resi 468-472"
+color = "#1baf7a"
+representation = "sticks"
+
+[[panels.labels]]
+selection = "chain A and resi 406"
+size = 24
+offset = [-8, 8, 30]
+
+[[panels.labels]]
+selection = "chain A and resi 470"
+size = 24
+offset = [-5, 8, 30]
+
+[[panels.distances]]
+name = "Site spacing"
+start = "chain A and resi 406"
+end = "chain A and resi 470"
+mode = "centroid"
+size = 22
+offset = [0, -10, 30]
