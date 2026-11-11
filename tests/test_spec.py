@@ -74,6 +74,19 @@ class SpecTests(unittest.TestCase):
         with self.assertRaisesRegex(SpecError, "model.pdb"):
             load_spec(self.path)
 
+    def test_annotations_are_composition_only_and_validate_scores(self):
+        original = render_key(load_spec(self.path))
+        content = SPEC.replace('title = "A complex"', 'title = "A complex"\nconclusion = "Predicted interface"')
+        content = content.replace('title = "Partner in context"', 'title = "Partner in context"\nsummary = "Candidate 1"\nmetrics = { iPTM = 0.82, pLDDT = "91.0" }')
+        self.path.write_text(content)
+        spec = load_spec(self.path)
+        self.assertEqual(spec.conclusion, "Predicted interface")
+        self.assertEqual(spec.panels[0].metrics, {"iPTM": 0.82, "pLDDT": "91.0"})
+        self.assertEqual(original, render_key(spec))
+        self.path.write_text(content.replace('iPTM = 0.82', 'iPTM = true'))
+        with self.assertRaises(SpecError):
+            load_spec(self.path)
+
 
 if __name__ == "__main__":
     unittest.main()

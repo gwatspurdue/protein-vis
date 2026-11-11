@@ -2,6 +2,7 @@
 version = 1
 preset = "protein-protein"
 title = "9CHT · E6AP and E6 interaction sites"
+conclusion = "Example: highlighted regions are geometrically close to E6; experimental evidence is needed to assess binding."
 output = "../figures/annotated"
 columns = 2
 width_inches = 7.2
@@ -38,6 +39,7 @@ representation = "surface"
 [[panels]]
 id = "interface"
 title = "Two highlighted contact regions"
+summary = "Example structural annotation; no prediction scores are supplied."
 scene = "interface"
 structure = "data/9cht-ac.pdb"
 target = "chain A"

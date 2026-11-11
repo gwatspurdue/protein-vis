@@ -25,6 +25,11 @@ individual panels. Distances are geometric, in Å, and `closest` and `centroid`
 have different meanings; state the method when reporting values. Check that
 selections identify the intended atoms and that site selections are disjoint.
 
+Use panel `metrics` and `summary` for user-supplied confidence scores or panel
+conclusions, and figure-level `conclusion` for an overall takeaway. Preserve
+provided score precision, identify the source, and never imply confidence scores
+are experimental binding measurements. These fields only affect composition.
+
 Run `validate`, then `build`. Inspect the PNG and the measured distances in
 `manifest.json` for label collisions, clipping, visibility, and interpretation;
 adjust the specification and rebuild when needed. Preserve the input structures

@@ -20,6 +20,8 @@ def render_inputs(spec: FigureSpec) -> dict:
     for panel in spec.panels:
         row = asdict(panel)
         row.pop("title")
+        row.pop("summary")
+        row.pop("metrics")
         row["structure"] = str(panel.structure)
         row["structure_sha256"] = file_digest(panel.structure)
         for site in row["sites"]:

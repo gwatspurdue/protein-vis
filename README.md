@@ -32,6 +32,26 @@ target, partner, and site selections.
 
 ## Presets and annotations
 
+Add optional figure text and user-supplied scores directly to the TOML:
+
+```toml
+conclusion = "The predicted complex places the binder near the target site."
+
+[[panels]]
+id = "interface"
+summary = "Candidate 1: predicted interface"
+metrics = { iPTM = 0.82, pLDDT = "91.0" }
+# Also specify structure, target, and partner for this panel.
+```
+
+`conclusion` appears below the figure; `summary` and `metrics` appear beneath
+their panel. Values can be finite numbers or nonempty strings; quote a value to
+preserve formatting such as trailing zeros. Supply the actual scores and their
+source yourself: they are displayed verbatim and are not inferred from the
+structure. Confidence scores describe model confidence, not measured binding.
+These fields affect composition only, so edit them and run `compose` or `build`
+to reuse matching frames without PyMOL ray tracing.
+
 Run `uv run protein-vis presets` for the JSON catalog. Set `preset` at the top
 level or within a panel: `protein-protein` draws the partner as a cartoon;
 `protein-ligand` uses sticks and a more transparent target; `cyclic-peptide`

@@ -29,22 +29,39 @@ def compose(spec: FigureSpec) -> list[Path]:
     # Leave room for wrapped site names as well as the molecular images.
     longest_name = max((len(s.name) for p in spec.panels for s in p.sites), default=7)
     legend_height = 0.22 * legend_rows * max(1, math.ceil(longest_name / 24)) + 0.1
-    height = rows * (spec.panel_height_inches + legend_height) + (0.5 if spec.title else 0.15)
+    wrap_width = max(20, int(spec.width_inches / columns * 12))
+    def wrap(text, width):
+        return "\n".join(textwrap.fill(line, width) for line in text.splitlines())
+
+    annotations = []
+    for panel in spec.panels:
+        metrics = "  ·  ".join(f"{name}: {value}" for name, value in panel.metrics.items())
+        annotations.append(wrap("\n".join(part for part in (metrics, panel.summary) if part), wrap_width))
+    annotation_heights = [max((0.20 * len(annotations[i].splitlines()) + 0.12
+                               for i in range(row * columns, min((row + 1) * columns, len(annotations)))
+                               if annotations[i]), default=0.001) for row in range(rows)]
+    conclusion = wrap(spec.conclusion, max(30, int(spec.width_inches * 13)))
+    footer_height = 0.22 * len(conclusion.splitlines()) + 0.18 if conclusion else 0
+    height = rows * (spec.panel_height_inches + legend_height) + sum(annotation_heights) + footer_height + (0.5 if spec.title else 0.15)
     with mpl.rc_context({"font.family": "DejaVu Sans", "font.size": 8,
                          "pdf.fonttype": 42, "ps.fonttype": 42}):
         fig = plt.figure(figsize=(spec.width_inches, height), facecolor="white")
         try:
-            grid = fig.add_gridspec(rows * 2, columns,
-                                    height_ratios=[spec.panel_height_inches, legend_height] * rows,
-                                    left=0.025, right=0.975, bottom=0.025,
+            ratios = [value for annotation_height in annotation_heights
+                      for value in (spec.panel_height_inches, legend_height, annotation_height)]
+            grid = fig.add_gridspec(rows * 3, columns,
+                                    height_ratios=ratios,
+                                    left=0.025, right=0.975, bottom=(footer_height + 0.05) / height,
                                     top=1 - (0.5 if spec.title else 0.15) / height,
                                     wspace=0.1, hspace=0.15)
             if spec.title:
                 fig.suptitle(textwrap.fill(spec.title, max(30, int(spec.width_inches * 12))),
                              fontsize=12, weight="bold", y=1 - 0.10 / height)
+            if conclusion:
+                fig.text(0.025, 0.08 / height, conclusion, fontsize=8, va="bottom", parse_math=False)
             for index, panel in enumerate(spec.panels):
                 row, column = divmod(index, columns)
-                ax = fig.add_subplot(grid[2 * row, column])
+                ax = fig.add_subplot(grid[3 * row, column])
                 # Independent cropping would destroy the shared molecular scale.
                 with Image.open(spec.output / "frames" / f"{panel.id}.png") as image:
                     ax.imshow(image.convert("RGBA"))
@@ -52,7 +69,7 @@ def compose(spec: FigureSpec) -> list[Path]:
                 label = chr(65 + index) if index < 26 else str(index + 1)
                 title = textwrap.fill(panel.title or panel.id, max(16, int(spec.width_inches / columns * 12)))
                 ax.set_title(f"{label}   {title}", loc="left", fontsize=9, weight="bold", pad=6)
-                legend_ax = fig.add_subplot(grid[2 * row + 1, column])
+                legend_ax = fig.add_subplot(grid[3 * row + 1, column])
                 legend_ax.set_axis_off()
                 entries = [("Target", panel.target_color), ("Interaction partner", panel.partner_color)]
                 entries.extend((site.name, site.color) for site in panel.sites)
@@ -60,6 +77,11 @@ def compose(spec: FigureSpec) -> list[Path]:
                                                 label=textwrap.fill(name, 24)) for name, color in entries],
                                  loc="center", ncols=2, frameon=False,
                                  fontsize=7, handlelength=0.9, columnspacing=1)
+                if annotations[index]:
+                    annotation_ax = fig.add_subplot(grid[3 * row + 2, column])
+                    annotation_ax.set_axis_off()
+                    annotation_ax.text(0, 1, annotations[index], fontsize=8, va="top", parse_math=False,
+                                       transform=annotation_ax.transAxes)
             written = []
             for suffix in ("png", "pdf"):
                 path = spec.output / f"figure.{suffix}"

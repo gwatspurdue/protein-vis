@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from protein_vis.presets import PRESETS
@@ -72,6 +72,8 @@ class Panel:
     partner_stick_radius: float = 0.24
     labels: tuple[Label, ...] = ()
     distances: tuple[Distance, ...] = ()
+    summary: str = ""
+    metrics: dict[str, str | int | float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -93,6 +95,7 @@ class FigureSpec:
     width_inches: float = 7.2
     panel_height_inches: float = 3.2
     render: RenderSettings = RenderSettings()
+    conclusion: str = ""
 
 
 def _table(value, allowed: set[str], context: str) -> dict:
@@ -189,7 +192,7 @@ def load_spec(path: Path) -> FigureSpec:
     except (OSError, tomllib.TOMLDecodeError) as error:
         raise SpecError(f"Cannot read {path}: {error}") from error
     _table(data, {"version", "output", "title", "columns", "width_inches",
-                  "panel_height_inches", "render", "panels", "preset"}, "figure")
+                  "panel_height_inches", "render", "panels", "preset", "conclusion"}, "figure")
     if type(data.get("version")) is not int or data["version"] != 1:
         raise SpecError("version must be 1")
     figure_preset = _preset(data.get("preset"))
@@ -242,6 +245,14 @@ def load_spec(path: Path) -> FigureSpec:
             if not isinstance(view, list) or len(view) != 18:
                 raise SpecError(f"{identifier}.view: expected the 18 numbers from PyMOL get_view")
             view = tuple(_number(v, f"{identifier}.view", -1e9, 1e9) for v in view)
+        metrics = row.get("metrics", {})
+        if not isinstance(metrics, dict):
+            raise SpecError(f"{identifier}.metrics: expected a table of score names and values")
+        for name, value in metrics.items():
+            _text(name, f"{identifier}.metrics name")
+            if not ((isinstance(value, str) and value.strip()) or
+                    (type(value) in (int, float) and math.isfinite(value))):
+                raise SpecError(f"{identifier}.metrics.{name}: expected a finite number or nonempty string")
         panels.append(Panel(
             id=identifier, structure=structure,
             target=_text(row.get("target"), f"{identifier}.target"),
@@ -260,6 +271,8 @@ def load_spec(path: Path) -> FigureSpec:
             partner_stick_radius=_number(row.get("partner_stick_radius", 0.24), "partner_stick_radius", 0.05, 2),
             labels=_labels(row.get("labels", []), f"{identifier}.labels"),
             distances=_distances(row.get("distances", []), f"{identifier}.distances"),
+            summary=_text(row.get("summary", ""), f"{identifier}.summary", empty=True),
+            metrics=metrics,
         ))
     return FigureSpec(
         source=path, output=output, panels=tuple(panels),
@@ -268,4 +281,5 @@ def load_spec(path: Path) -> FigureSpec:
         width_inches=_number(data.get("width_inches", 7.2), "width_inches", 2, 40),
         panel_height_inches=_number(data.get("panel_height_inches", 3.2), "panel_height_inches", 1, 20),
         render=render,
+        conclusion=_text(data.get("conclusion", ""), "conclusion", empty=True),
     )
